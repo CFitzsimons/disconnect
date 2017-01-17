@@ -10,7 +10,7 @@ export class DiceRoller implements IExecutableAction {
   }
 
   execute(params: string): string {
-    params = params.trim();
+    params = params.replace(/\s/g,"");
     if (!this.parameterRegex.test(params)) {
       console.log(params);
       throw new RangeError("/roll 1d6(+1d8|2)");
