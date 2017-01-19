@@ -33,12 +33,6 @@ export default class DiscordClient implements IClient {
   }
 
   handleMessage(event: any) {
-    // if (event.content.includes("siege")) {
-    //   event.react("🍆").catch(error => console.log(error));
-    // }
-    // if (event.content.includes("wow")) {
-    //   event.react("😲").catch(error => console.log(error));
-    // }
     let spaceIndex = event.content.indexOf(" ");
     if (spaceIndex < 0) return;
 

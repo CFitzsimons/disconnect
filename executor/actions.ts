@@ -134,16 +134,21 @@ export class SiegeLookup<T> implements IExecutableAction {
         }
       }, (error, data, user) => {
         let result = JSON.parse(data.body);
-        if (!result.results) {
+        if (!result.results || result.results[uid]) {
           resolve("Couldn't find user.");
+          return;
         } else {
           let data = result.results[uid];
+          if (!data) {
+            resolve("User has an account but hasn\'t played siege (or something broke).");
+            return;
+          }
           let kd = (data["generalpvp_kills:infinite"] / data["generalpvp_death:infinite"]).toFixed(2);
           let winPercentage = Math.round((data["generalpvp_matchwon:infinite"] / data["generalpvp_matchplayed:infinite"]) * 100);
           let accuracy = Math.round((data["generalpvp_bullethit:infinite"] / data["generalpvp_bulletfired:infinite"]) * 100);
           let assists = data["generalpvp_killassists:infinite"];
           let timePlayed = Math.round(data["generalpvp_timeplayed:infinite"] / 3600);
-          resolve(`\nK/D: ${kd}\nWin Rate: ${winPercentage}%\nAccuracy: ${accuracy}%\nAssists: ${assists}\nTime Played: ${timePlayed}hrs\n`);
+          resolve(`${params}\nK/D: ${kd}\nWin Rate: ${winPercentage}%\nAccuracy: ${accuracy}%\nAssists: ${assists}\nTime Played: ${timePlayed}hrs\n`);
         }
       });
     });
