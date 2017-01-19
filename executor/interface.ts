@@ -9,7 +9,7 @@ interface IExecutor {
   executables: IExecutableMap;
   addAction(action: IExecutableAction, identity: string): boolean;
   removeAction(identity: string): boolean;
-  execute(identity: string, parameters: string): string;
+  execute(identity: string, parameters: string): any;
 }
 
 export interface IExecutableMap {
@@ -23,7 +23,7 @@ export interface IExecutableAction {
 }
 
 interface IAction {
-  (params: string): string;
+  (params: string): any;
 }
 
 export default IExecutor;

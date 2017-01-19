@@ -1,3 +1,6 @@
 {
-  "bot_token": "<YOUR BOT TOKEN HERE>"
+  "bot_token": "<DISCORD BOT TOKEN>",
+  "ubi_email": "<UBISOFT EMMAIL>",
+  "ubi_password": "<UBISOFT PASSWORD>",
+  "appID": "39baebad-39e5-4552-8c25-2c9b919064e2"
 }

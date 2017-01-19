@@ -1,3 +1,5 @@
+const request = require("request");
+const constants = require("../configuration/constants");
 import { IExecutableAction } from "./interface";
 
 export class DiceRoller implements IExecutableAction {
@@ -54,5 +56,96 @@ export class DiceRoller implements IExecutableAction {
     }
     return result + " = " + total;
 
+  }
+}
+
+export class SiegeLookup<T> implements IExecutableAction {
+  parameterRegex: RegExp;
+  trigger: string;
+
+  constructor() {
+    this.parameterRegex = new RegExp(/^[a-zA-Z0-9\.\_]+$/);
+    this.trigger = "/lookup";
+  }
+
+  execute(params: string): any {
+    params = params.replace(/\s/g, "");
+    if (!this.parameterRegex.test(params)) {
+      throw new RangeError("/roll 1d6(+1d8|2)");
+    }
+    return new Promise(async (resolve, reject) => {
+      let token = (await(this.fetchToken())).toString();
+      if (token === "Rate limited, try again later.") {
+        resolve(token);
+        return;
+      }
+      let uid = (await(this.fetchUser(params, token))).toString();
+      let stats = (await(this.fetchStats(params, uid, token))).toString();
+      resolve(stats);
+    });
+  }
+
+  async fetchToken(): Promise<{}> {
+    return new Promise((resolve, reject) => {
+      request.post(`https://${constants.ubi_email}:${constants.ubi_password}@connect.ubi.com/ubiservices/v2/profiles/sessions`, {
+        "headers": {
+          "Content-Type": "application/json",
+          "Ubi-AppId": constants.appID
+        }
+      }, (error, data, user) => {
+        let body = JSON.parse(data.body);
+        if (body.errorCode) {
+          resolve("Rate limited, try again later.");
+          return;
+        }
+        resolve(body.ticket);
+      });
+    });
+  }
+  async fetchUser(params: string, token: string): Promise<{}> {
+    return new Promise((resolve, reject) => {
+      request.get(`https://public-ubiservices.ubi.com/v2/profiles?nameOnPlatform=${params}&platformType=uplay`, {
+        "headers": {
+          "Content-Type": "application/json",
+          "Ubi-AppId": constants.appID,
+          "Authorization": `Ubi_v1 t=${token}`
+        }
+      }, (error, data, user) => {
+        let req = JSON.parse(data.body);
+        if (req.errorCode) {
+          resolve("Invalid user");
+          return;
+        }
+        if (req.profiles.length !== 1) {
+          resolve("Invalid user");
+          return;
+        }
+        resolve(req.profiles[0].profileId);
+      });
+    });
+  }
+  async fetchStats(params: string, uid: string, token: string) {
+    return new Promise((resolve, reject) => {
+      request.get(`https://public-ubiservices.ubi.com/v1/spaces/5172a557-50b5-4665-b7db-e3f2e8c5041d/sandboxes/OSBOR_PC_LNCH_A/playerstats2/statistics?populations=${uid}&statistics=generalpvp_timeplayed,generalpvp_matchplayed,generalpvp_matchwon,generalpvp_matchlost,generalpvp_kills,generalpvp_death,generalpvp_bullethit,generalpvp_bulletfired,generalpvp_killassists,generalpvp_revive,generalpvp_headshot,generalpvp_penetrationkills,generalpvp_meleekills,rescuehostagepvp_bestscore,plantbombpvp_bestscore`, {
+        "headers": {
+          "Content-Type": "application/json",
+          "Ubi-AppId": constants.appID,
+          "Authorization": `Ubi_v1 t=${token}`
+        }
+      }, (error, data, user) => {
+        let result = JSON.parse(data.body);
+        if (!result.results) {
+          resolve("Couldn't find user.");
+        } else {
+          let data = result.results[uid];
+          let kd = (data["generalpvp_kills:infinite"] / data["generalpvp_death:infinite"]).toFixed(2);
+          let winPercentage = Math.round((data["generalpvp_matchwon:infinite"] / data["generalpvp_matchplayed:infinite"]) * 100);
+          let accuracy = Math.round((data["generalpvp_bullethit:infinite"] / data["generalpvp_bulletfired:infinite"]) * 100);
+          let assists = data["generalpvp_killassists:infinite"];
+          let timePlayed = Math.round(data["generalpvp_timeplayed:infinite"] / 3600);
+          resolve(`\nK/D: ${kd}\nWin Rate: ${winPercentage}%\nAccuracy: ${accuracy}%\nAssists: ${assists}\nTime Played: ${timePlayed}hrs\n`);
+        }
+      });
+    });
   }
 }

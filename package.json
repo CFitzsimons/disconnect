@@ -14,6 +14,8 @@
     "typescript": "^2.1.5"
   },
   "dependencies": {
-    "discord.js": "^11.0.0"
+    "@types/es6-promise": "0.0.32",
+    "discord.js": "^11.0.0",
+    "request": "^2.79.0"
   }
 }
