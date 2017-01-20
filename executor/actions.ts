@@ -134,7 +134,7 @@ export class SiegeLookup<T> implements IExecutableAction {
         }
       }, (error, data, user) => {
         let result = JSON.parse(data.body);
-        if (!result.results || result.results[uid]) {
+        if (!result.results || !result.results[uid]) {
           resolve("Couldn't find user.");
           return;
         } else {
